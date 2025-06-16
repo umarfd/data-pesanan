@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build, Push, and Deploy Docker Image
 
 on:
   push:
@@ -22,14 +22,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
+      - name: Log in to the container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags & labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -39,20 +39,20 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: ${{ github.event_name == 'push' }}      # hanya push pada event push
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-deploy:
+  deploy:
     needs: build-and-push
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'                     # lewati saat pull_request
     runs-on: ubuntu-latest
 
     steps:
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
-          version: 'latest'
+          version: latest
 
       - name: Setup kubeconfig
         run: |
@@ -62,9 +62,10 @@ deploy:
 
       - name: Deploy to k3s with Helm
         run: |
-          helm repo add umarfd https://umarfd.github.io/data-pesanan-helm-chart 
+          helm repo add umarfd https://umarfd.github.io/data-pesanan-helm-chart
           helm repo update
           helm upgrade --install crm umarfd/app \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ github.sha }} \
             --namespace dev \
+            --create-namespace \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --set image.tag=${{ steps.meta.outputs.version }}
