@@ -68,5 +68,7 @@ jobs:
             --namespace dev \
             --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ steps.meta.outputs.version }}
+            --set image.tag=${{ steps.meta.outputs.version }} \
+            --set image.pullSecrets[0].name=ghcr-secret
+
 
