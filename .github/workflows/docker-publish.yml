@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 env:
-  REGISTRY: ghcr.io/umarfd          # host + namespace GHCR
-  IMAGE_NAME: data-pesanan          # nama imagenya
+  REGISTRY: ghcr.io/umarfd
+  IMAGE_NAME: data-pesanan
   DOCKER_BUILDKIT: 1
 
 jobs:
@@ -22,34 +22,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      #––– 1. Tentukan tag image (pakai SHA commit) ––––––––––––––––––––––––––
-      - name: Set image tag
-        id: img_tag
-        run: echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
-
-      #––– 2. Login ke GHCR pakai PAT ––––––––––––––––––––––––––––––––––––––––
-      - name: Log in to GHCR
+      - name: Log in to the container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      #––– 3. Build & push image ––––––––––––––––––––––––––––––––––––––––––––
+      - name: Extract metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}          # hanya push di event push
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.revision=${{ github.sha }}
+          push: ${{ github.event_name == 'push' }}      # hanya push pada event push
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     needs: build-and-push
-    if: github.event_name == 'push'       # lewati untuk PR
+    if: github.event_name == 'push'                     # lewati saat pull_request
     runs-on: ubuntu-latest
 
     steps:
@@ -72,4 +68,5 @@ jobs:
             --namespace dev \
             --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ env.IMAGE_TAG }}
+            --set image.tag=${{ steps.meta.outputs.version }}
+
