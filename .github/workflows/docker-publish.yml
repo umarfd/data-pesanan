@@ -1,4 +1,4 @@
-name: Build, Push, and Deploy Docker Image
+name: Docker Build and Publish
 
 on:
   push:
@@ -22,37 +22,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to the container registry
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags & labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          push: ${{ github.event_name == 'push' }}      # hanya push pada event push
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
     needs: build-and-push
-    if: github.event_name == 'push'                     # lewati saat pull_request
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
-          version: latest
+          version: 'latest'
 
       - name: Setup kubeconfig
         run: |
@@ -62,13 +57,11 @@ jobs:
 
       - name: Deploy to k3s with Helm
         run: |
-          helm repo add umarfd https://umarfd.github.io/data-pesanan-helm-chart
+          helm repo add umarfd https://umarfd.github.io/data-pesanan-helm-chart 
           helm repo update
           helm upgrade --install data-pesanan umarfd/app \
-            --namespace dev \
-            --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ steps.meta.outputs.version }} \
-            --set image.pullSecrets[0].name=ghcr-secret
-
+            --set image.tag=${{ github.sha }} \
+            --namespace dev \
+            
 
