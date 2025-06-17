@@ -64,7 +64,7 @@ jobs:
         run: |
           helm repo add umarfd https://umarfd.github.io/data-pesanan-helm-chart
           helm repo update
-          helm upgrade --install crm umarfd/app \
+          helm upgrade --install data-pesanan umarfd/app \
             --namespace dev \
             --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
