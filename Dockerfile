@@ -2,20 +2,23 @@ FROM node:18
 
 WORKDIR /app
 
-# Install postgresql-client dan netcat-openbsd
+# Install dependencies including postgresql-client and netcat
 RUN apt-get update && \
     apt-get install -y postgresql-client netcat-openbsd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Salin file package.json dan install dependensi
-COPY package.json ./
+# Install nodemon globally
+RUN npm install -g nodemon
+
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Salin seluruh source code ke container
+# Copy all source code
 COPY . .
 
-# Buka port aplikasi
+# Expose application port
 EXPOSE 3000
 
-# Jalankan aplikasi (opsional karena override via docker-compose)
+# Default command (will be overridden by docker-compose for development)
 CMD ["node", "app.js"]
