@@ -5,12 +5,18 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio",
+    "prisma:reset": "prisma migrate reset --force",
+    "prisma:status": "prisma migrate status"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.10.0",
     "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
@@ -20,5 +26,8 @@
     "nodemon": "^3.0.2",
     "prisma": "^6.10.0"
   },
-  "description": ""
+  "description": "",
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  }
 }
