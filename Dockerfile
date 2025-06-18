@@ -12,6 +12,7 @@ RUN npm install -g nodemon
 
 # Copy package files and install dependencies
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm install
 
 # Copy all source code
