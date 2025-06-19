@@ -2,24 +2,32 @@ FROM node:18
 
 WORKDIR /app
 
-# Install dependencies including postgresql-client and netcat
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y postgresql-client netcat-openbsd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install nodemon globally
+# Install global packages
 RUN npm install -g nodemon
 
-# Copy package files and install dependencies
+# Copy package files first for better caching
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm install
 
-# Copy all source code
+# Install dependencies and generate Prisma client
+RUN npm install && npx prisma generate
+
+# Copy all other files (exclude what's in .dockerignore)
 COPY . .
 
-# Expose application port
+# Build if using TypeScript (uncomment if needed)
+# RUN npm run build
+
 EXPOSE 3000
 
-# Default command (will be overridden by docker-compose for development)
+# Health check for production
+HEALTHCHECK --interval=30s --timeout=10s \
+  CMD node healthcheck.js || exit 1
+
+# Default production command
 CMD ["node", "app.js"]
