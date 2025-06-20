@@ -1,3 +1,4 @@
+// schema.prisma
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -9,14 +10,29 @@ datasource db {
 }
 
 model pesanan {
-  id             Int       @id @default(autoincrement())
-  nama_pelanggan String    @db.VarChar(100)
-  produk         String    @db.VarChar(100)
+  id             Int           @id @default(autoincrement())
+  nama_pelanggan String        @db.VarChar(100)
+  produk         String        @db.VarChar(100)
   jumlah         Int
   alamat         String?
-  created_at     DateTime? @default(now()) @db.Timestamp(6)
-  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  created_at     DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?     @default(now()) @db.Timestamp(6)
+  pembayaran     pembayaran[]  // Relasi ke model pembayaran (one-to-many)
 
   @@index([nama_pelanggan], map: "idx_nama_pelanggan")
   @@index([produk], map: "idx_produk")
+}
+
+model pembayaran {
+  id           Int      @id @default(autoincrement())
+  pesanan_id   Int
+  metode       String   @db.VarChar(50)
+  jumlah_bayar Float
+  status       String   @db.VarChar(30)
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+
+  // Relasi ke model pesanan
+  pesanan      pesanan  @relation(fields: [pesanan_id], references: [id])
+
+  @@index([pesanan_id], map: "idx_pesanan_id")
 }
